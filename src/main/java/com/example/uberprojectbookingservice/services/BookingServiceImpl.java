@@ -4,18 +4,18 @@ import com.example.uberprojectbookingservice.apis.LocationServiceApi;
 import com.example.uberprojectbookingservice.dtos.DriverLocationDto;
 import com.example.uberprojectbookingservice.dtos.NearbyDriversRequestDto;
 import com.example.uberprojectbookingservice.respositories.BookingRepository;
+import com.example.uberprojectbookingservice.respositories.DriverRepository;
 import com.example.uberprojectentityservice.models.Booking;
 import com.example.uberprojectentityservice.models.BookingStatus;
-import org.springframework.http.ResponseEntity;
+import com.example.uberprojectentityservice.models.Driver;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import javax.lang.model.type.ArrayType;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 
 @Service
@@ -25,14 +25,16 @@ public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
 
     private final LocationServiceApi locationServiceApi;
+    private final DriverRepository driverRepository;
 //    private final RestTemplate restTemplate;
 
 //    private static final String LOCATION_SERVICE = "http://localhost:7777";
 
-    public BookingServiceImpl(BookingRepository bookingRepository,LocationServiceApi locationServiceApi) {
+    public BookingServiceImpl(BookingRepository bookingRepository, LocationServiceApi locationServiceApi, DriverRepository driverRepository) {
         this.bookingRepository = bookingRepository;
 //        this.restTemplate = new RestTemplate();
         this.locationServiceApi = locationServiceApi;
+        this.driverRepository = driverRepository;
     }
 
     @Override
@@ -61,6 +63,17 @@ public class BookingServiceImpl implements BookingService {
 
         return bookingRepository.save(booking);
 
+    }
+
+    @Override
+    public Booking updateBooking(Long bookingId, BookingStatus status, Optional<Long> driverId) {
+        Optional<Driver> driver = driverRepository.findById(driverId.get());
+        if(driver.isPresent()) {
+            bookingRepository.updateBookingStatusById(bookingId, status, Optional.of(driver.get()));
+            Optional<Booking> booking = bookingRepository.findById(bookingId);
+            return booking.get();
+        }
+        return null;
     }
 
     private void processNearByDriversAsync(NearbyDriversRequestDto requestDto) {
